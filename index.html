@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Graph Traversal</title>
+    </head>
+    <body>
+        <h3>Input Node and Edge numbers</h3>
+        <div>
+            <label for="nodes">Nodes</label>
+            <input id="nodes" type="number">
+            <label for="edges">Edges</label>
+            <input id="edges" type="number">
+            <button id="NE">Submit</button>
+        </div>
+        <br>
+        <div id="edgeInput"></div>
+        <canvas></canvas>
+        <div id="input">
+            <input id="start" type="number" />
+            <input id="goal" type="number" />
+        </div>
+        <button id="simulate">Start</button>
+
+        <script src="tools.js"></script>
+        <script src="bfs.js"></script>
+        <script src="graph.js"></script>
+    </body>
+</html>
