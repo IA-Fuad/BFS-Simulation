@@ -13,7 +13,19 @@ document.querySelector("#NE").addEventListener("click", function () {
     context.clearRect(0, 0, window.innerWidth, window.innerHeight);
     nodeNumbers = document.querySelector("#nodes").value;
     edgeNumbers = document.querySelector("#edges").value;
+    if (nodeNumbers == "" || edgeNumbers == "") {
+        alert("input incomplete");
+        return;
+    }
+    if (nodeNumbers < 0 || edgeNumbers < 0) {
+        alert("input numbers should be positive");
+        return;
+    }
+
     let edgeInput = document.querySelector("#edgeInput");
+    while (edgeInput.firstChild) {
+        edgeInput.removeChild(edgeInput.firstChild);
+    }
     let x, u, v;
     for (let i = 0; i < edgeNumbers; i++) {
         x = document.createElement("div");
@@ -29,18 +41,53 @@ document.querySelector("#NE").addEventListener("click", function () {
         edgeInput.appendChild(x);
     }
     let btn = document.createElement("Button");
-    btn.innerText = "Submit";
+    btn.innerText = "Submit Edges";
     btn.id = "edgesButton";
     btn.setAttribute("style", "margin: 10px");
     btn.addEventListener("click", gen);
     edgeInput.appendChild(btn);
+
+    canvas.setAttribute("style", "background: rgb(224, 224, 224)");
 });
 
+function gen() {
+
+    for (let i = 0; i < edgeNumbers; i++) {
+        let u = document.getElementById("u" + i).value;
+        let v = document.getElementById("v" + i).value;
+
+        if (u == "" || v == "") {
+            alert("input incomplete");
+            return;
+        }
+        if (u < 0 || v < 0 || u >= nodeNumbers || v >= nodeNumbers) {
+            alert("inputs in edge lists should be between 0 and Nodes-1");
+            return;
+        }
+    }
+
+    document.getElementById("dragInstruction").innerHTML =
+        "Drag around the nodes to change the position as you like";
+    if (init()) {
+        draw();
+    }
+}
+
 document.querySelector("#simulate").addEventListener("click", function () {
+    if (nodes.length === 0 || edges.length === 0) {
+        alert("input incomplete");
+        return;
+    }
+    clearCanvas();
+    draw();
     let start = document.getElementById("start").value;
-    let goal = document.getElementById("goal").value;
+    // let goal = document.getElementById("goal").value;
+    if (start >= nodeNumbers || start < 0) {
+        alert("start node should be between 0 and Nodes-1");
+        return;
+    }
     console.log(start);
-    new BFS(nodes[start], nodes[goal], nodeNumbers, edges);
+    new BFS(nodes[start], null, nodeNumbers, edges);
     simulateBFS();
 });
 
@@ -59,9 +106,10 @@ window.addEventListener("resize", function () {
 });
 
 window.addEventListener("mousemove", function (event) {
-    let x = event.x;
-    let y = event.y;
-    // console.log(getDistance(x, y, nodes[0].x, nodes[0].y), nodes[0].radius);
+    let mousePosition = getMousePos(canvas, event);
+    let x = mousePosition.x;
+    let y = mousePosition.y;
+
     if (mouseMove && insideNode != null) {
         nodes[insideNode].x = x;
         nodes[insideNode].y = y;
@@ -72,31 +120,24 @@ window.addEventListener("mousemove", function (event) {
     }
     let flag = false;
     for (let i = 0; i < nodes.length; i++) {
-        //console.log(getDistance(x, y, nodes[i].x, nodes[i].y));
         if (getDistance(x, y, nodes[i].x, nodes[i].y) <= nodes[i].radius) {
             flag = true;
-            // console.log(x, y, nodes[i].x, nodes[i].y);
-            // console.log(getDistance(x, y, nodes[i].x, nodes[i].y));
             insideNode = i;
             break;
         }
     }
-    //console.log(insideNode);
     if (!flag) {
         insideNode = null;
     }
 });
 
 window.addEventListener("mousedown", function () {
-    // console.log('clicked')
     mouseMove = true;
 });
 
 window.addEventListener("mouseup", function () {
-    // console.log('dropped')
     mouseMove = false;
     insideNode = null;
-    //  new BFS(nodes[0], nodes[3], n, edges);
 });
 
 function Graph(x, y, radius, node) {
@@ -120,8 +161,12 @@ function Graph(x, y, radius, node) {
             this.shapes.drawLine(
                 this.x + Math.cos(angle1) * this.radius,
                 this.y + Math.sin(angle1) * this.radius,
-                edges[i].x + Math.cos(angle2) * edges[i].radius,
-                edges[i].y + Math.sin(angle2) * edges[i].radius,
+                edges[i].x +
+                    Math.cos(angle2) * edges[i].radius -
+                    Math.cos(angle2),
+                edges[i].y +
+                    Math.sin(angle2) * edges[i].radius -
+                    Math.sin(angle2),
                 "black"
             );
         }
@@ -129,11 +174,11 @@ function Graph(x, y, radius, node) {
 }
 
 function init() {
+    clearCanvas();
     nodes = [];
     edges = [];
-    let R =
-        Math.min(window.innerWidth / 2, window.innerHeight / 2) -
-        (nodeRadius + 20);
+
+    let R = Math.min(window.innerWidth / 2, window.innerHeight / 2) - (nodeRadius + 20);
     let circumLen = R * 2 * Math.PI;
     let avgDis = circumLen / nodeNumbers - 8;
     // console.log("avgdis", avgDis);
@@ -163,7 +208,6 @@ function draw() {
         let v = document.getElementById("v" + i).value;
 
         if (edges[u] == null) {
-            //console.log('hhhh')
             edges[u] = [nodes[v]];
         } else {
             edges[u].push(nodes[v]);
@@ -175,14 +219,11 @@ function draw() {
         }
     }
 
-    //console.log(edges);
-
     for (let i = 0; i < nodeNumbers; i++) {
-        nodes[i].drawNode();
+        nodes[i].drawNode("white", "black");
     }
 
     for (let i = 0; i < nodeNumbers; i++) {
-        //console.log(edges[i])
         if (edges[i] == null) {
             continue;
         }
@@ -190,16 +231,35 @@ function draw() {
     }
 }
 
-function gen() {
-    context.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-    if (init()) {
-        draw();
-    }
-}
 
-function randomNode(x, y, r) {
-    let angle = generateRandom(0, Math.PI);
-    angle = Math.random() > 0.5 ? -angle : angle;
-    return [x + r * Math.cos(angle), y + r * Math.sin(angle)];
-}
+// context.clearRect(0, 0, canvas.width, canvas.height);
+// arrow({ x: 10, y: 10 }, { x: 100, y: 170 }, 10);
+// arrow({ x: 40, y: 250 }, { x: 10, y: 70 }, 5);
+
+// function arrow(p1, p2, size) {
+//     var angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+//     var hyp = Math.sqrt(
+//         (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y)
+//     );
+
+//     context.save();
+//     context.translate(p1.x, p1.y);
+//     context.rotate(angle);
+
+//     // line
+//     context.beginPath();
+//     context.moveTo(0, 0);
+//     context.lineTo(hyp - size, 0);
+//     context.stroke();
+
+//     // triangle
+//     context.fillStyle = "blue";
+//     context.beginPath();
+//     context.lineTo(hyp - size, size);
+//     context.lineTo(hyp, 0);
+//     context.lineTo(hyp - size, -size);
+//     context.fill();
+
+//     context.restore();
+// }

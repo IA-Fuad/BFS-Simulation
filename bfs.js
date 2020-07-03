@@ -1,4 +1,5 @@
 let values = [];
+let i;
 
 function BFS(start, end, totalNodes, edgeList) {
     this.queue = [start];
@@ -8,9 +9,15 @@ function BFS(start, end, totalNodes, edgeList) {
     this.end = end;
     this.totalNodes = totalNodes;
     this.edgeList = edgeList;
+    values = [];
+    i = -1;
     while (this.queue.length > 0) {
         let u = this.queue.shift();
         let a = [];
+        if (this.edgeList[u.node] == null) {
+            u.drawNode("green", "white");
+            return;
+        }
         let len = this.edgeList[u.node].length;
         for (let i = 0; i < len; i++) {
             let v = this.edgeList[u.node][i];
@@ -29,7 +36,6 @@ function BFS(start, end, totalNodes, edgeList) {
     }
 }
 
-let i = -1;
 function simulateBFS() {
     i++;
     if (values.length === i) {
@@ -38,27 +44,28 @@ function simulateBFS() {
     }
     if (values[i].adj.length > 0) {
         console.log(values[i], values[i].adj);
-        check(values[i].active, values[i].adj);
+        process(values[i].active, values[i].adj);
     } else {
+        values[i].active.drawNode("green", "white");
         simulateBFS();
     }
 }
 
-function animate(all, a) {
+function animate(activeValues) {
     let req = requestAnimationFrame(function () {
-        animate(all, a);
+        animate(activeValues);
     });
 
-    let finish = 0;
+    let a = activeValues[0].a, finish = 0;
     a.drawNode("yellow", "black");
-    for (let i = 0; i < all.length; i++) {
-        let x = all[i].x,
-            y = all[i].y,
-            dx = all[i].dx,
-            dy = all[i].dy,
-            fx = all[i].fx,
-            fy = all[i].fy,
-            b = all[i].b;
+    for (let i = 0; i < activeValues.length; i++) {
+        let x = activeValues[i].x,
+            y = activeValues[i].y,
+            dx = activeValues[i].dx,
+            dy = activeValues[i].dy,
+            fx = activeValues[i].fx,
+            fy = activeValues[i].fy,
+            b = activeValues[i].b;
         if (getDistance(x, y, fx, fy) > b.radius) {
             new DrawShapes().drawLine(
                 a.x + dx * a.radius,
@@ -68,35 +75,36 @@ function animate(all, a) {
                 "red",
                 3
             );
-            all[i].x += dx;
-            all[i].y += dy;
+            activeValues[i].x += dx;
+            activeValues[i].y += dy;
         } else {
             finish++;
             b.drawNode("red", "white");
         }
     }
 
-    if (finish === all.length) {
-        console.log("called");
+    if (finish === activeValues.length) {
         a.drawNode("green", "white");
         cancelAnimationFrame(req);
-        simulateBFS();
+        setTimeout(function() {
+            simulateBFS();
+        }, 1500);
     }
 }
 
-function check(a, b) {
-    let all = [];
+function process(activeNode, adj) {
+    let activeValues = [];
 
-    for (let i = 0; i < b.length; i++) {
-        let x1 = a.x,
-            y1 = a.y,
-            x2 = b[i][0].x,
-            y2 = b[i][0].y;
+    for (let i = 0; i < adj.length; i++) {
+        let x1 = activeNode.x,
+            y1 = activeNode.y,
+            x2 = adj[i][0].x,
+            y2 = adj[i][0].y;
         let angle1 = Math.atan2(y2 - y1, x2 - x1);
         let dx = Math.cos(angle1);
         let dy = Math.sin(angle1);
-        x1 += dx * a.radius;
-        y1 += dy * a.radius;
+        x1 += dx * activeNode.radius;
+        y1 += dy * activeNode.radius;
         let ob = {
             x: x1,
             y: y1,
@@ -104,9 +112,10 @@ function check(a, b) {
             dy: dy,
             fx: x2,
             fy: y2,
-            b: b[i][0],
+            a: activeNode,
+            b: adj[i][0],
         };
-        all.push(ob);
+        activeValues.push(ob);
     }
-    animate(all, a);
+    animate(activeValues);
 }

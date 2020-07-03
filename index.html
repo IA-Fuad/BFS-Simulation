@@ -6,8 +6,8 @@
         <title>Graph Traversal</title>
     </head>
     <body>
-        <h3>Input Node and Edge numbers</h3>
-        <div>
+        <div style="text-align: center;">
+            <h3>Input Node and Edge numbers</h3>
             <label for="nodes">Nodes</label>
             <input id="nodes" type="number">
             <label for="edges">Edges</label>
@@ -15,13 +15,17 @@
             <button id="NE">Submit</button>
         </div>
         <br>
-        <div id="edgeInput"></div>
+        <div id="edgeInput" style="text-align: center;"></div>
+        <h3 id="dragInstruction"></h3>
         <canvas></canvas>
-        <div id="input">
+        <div id="input" style="text-align: center;">
+            <label for="start">Start Node</label>
             <input id="start" type="number" />
-            <input id="goal" type="number" />
+            <!-- <label for="goal">Goal Node</label>
+            <input id="goal" type="number" /> -->
+            <button id="simulate">Start Simulation</button>
         </div>
-        <button id="simulate">Start</button>
+        
 
         <script src="tools.js"></script>
         <script src="bfs.js"></script>

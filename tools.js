@@ -51,6 +51,12 @@ function generateRandom(a, b) {
     return Math.random() * b + a;
 }
 
+function randomNode(x, y, r) {
+    let angle = generateRandom(0, Math.PI);
+    angle = Math.random() > 0.5 ? -angle : angle;
+    return [x + r * Math.cos(angle), y + r * Math.sin(angle)];
+}
+
 function getDistance(x1, y1, x2, y2) {
     let disX = x1 - x2;
     let disY = y1 - y2;
@@ -83,3 +89,18 @@ function drawEllipse() {
 }
 
 
+function clearCanvas() {
+    context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+}
+
+function getMousePos(canvas, evt) {
+    let rect = canvas.getBoundingClientRect();
+    return {
+        x:
+            ((evt.clientX - rect.left) / (rect.right - rect.left)) *
+            canvas.width,
+        y:
+            ((evt.clientY - rect.top) / (rect.bottom - rect.top)) *
+            canvas.height,
+    };
+}
