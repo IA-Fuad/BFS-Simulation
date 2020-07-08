@@ -8,15 +8,18 @@ const nodeRadius = 20;
 let nodeNumbers, edgeNumbers;
 let nodes = [];
 let edges = [];
+let edgeColor;
 
 document.querySelector("#NE").addEventListener("click", function () {
-    context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    clearCanvas(context);
     nodeNumbers = document.querySelector("#nodes").value;
     edgeNumbers = document.querySelector("#edges").value;
     if (nodeNumbers == "" || edgeNumbers == "") {
         alert("input incomplete");
         return;
     }
+    nodeNumbers = parseInt(nodeNumbers);
+    edgeNumbers = parseInt(edgeNumbers);
     if (nodeNumbers < 0 || edgeNumbers < 0) {
         alert("input numbers should be positive");
         return;
@@ -35,13 +38,13 @@ document.querySelector("#NE").addEventListener("click", function () {
         v.type = "number";
         u.id = "u" + i;
         v.id = "v" + i;
-        u.setAttribute("style", "margin: 10px");
+        u.setAttribute("style", "margin: 2px");
         x.appendChild(u);
         x.appendChild(v);
         edgeInput.appendChild(x);
     }
     let btn = document.createElement("Button");
-    btn.innerText = "Submit Edges";
+    btn.innerText = "Generate Graph";
     btn.id = "edgesButton";
     btn.setAttribute("style", "margin: 10px");
     btn.addEventListener("click", gen);
@@ -55,12 +58,15 @@ function gen() {
     for (let i = 0; i < edgeNumbers; i++) {
         let u = document.getElementById("u" + i).value;
         let v = document.getElementById("v" + i).value;
-
         if (u == "" || v == "") {
             alert("input incomplete");
             return;
         }
+        u = parseInt(u);
+        v = parseInt(v);
         if (u < 0 || v < 0 || u >= nodeNumbers || v >= nodeNumbers) {
+            console.log(u<0, v<0, u>=nodeNumbers, v>=nodeNumbers);
+            console.log(u, v, nodeNumbers);
             alert("inputs in edge lists should be between 0 and Nodes-1");
             return;
         }
@@ -69,7 +75,7 @@ function gen() {
     document.getElementById("dragInstruction").innerHTML =
         "Drag around the nodes to change the position as you like";
     if (init()) {
-        draw();
+        draw(true);
     }
 }
 
@@ -78,17 +84,29 @@ document.querySelector("#simulate").addEventListener("click", function () {
         alert("input incomplete");
         return;
     }
-    clearCanvas();
-    draw();
-    let start = document.getElementById("start").value;
+    clearCanvas(context);
+    draw(true);
+    let start = parseInt(document.getElementById("start").value);
     // let goal = document.getElementById("goal").value;
     if (start >= nodeNumbers || start < 0) {
         alert("start node should be between 0 and Nodes-1");
         return;
     }
-    console.log(start);
-    new BFS(nodes[start], null, nodeNumbers, edges);
-    simulateBFS();
+    for (let i = 0; i < edges.length; i++) {
+        if (edges[i] == null) {
+            continue;
+        }
+        edges[i].sort(function (a, b) {
+            if (getDistance(nodes[i].x, nodes[i].y, a.x, a.y) <
+                getDistance(nodes[i].x, nodes[i].y, b.x, b.y)) {
+                    return -1;
+                }
+            return 1;
+        });
+        //console.log(edges[i])
+    }
+    bfs(nodes[start], null, nodeNumbers, edges);
+    //simulateBFS();
 });
 
 let insideNode = null;
@@ -101,7 +119,7 @@ window.addEventListener("resize", function () {
     midY = window.innerHeight / 2;
 
     if (init()) {
-        draw();
+        draw(false);
     }
 });
 
@@ -115,7 +133,7 @@ window.addEventListener("mousemove", function (event) {
         nodes[insideNode].y = y;
         nodes[insideNode].shapes = new DrawShapes(x, y);
         context.clearRect(0, 0, canvas.width, canvas.height);
-        draw();
+        draw(false);
         return;
     }
     let flag = false;
@@ -140,16 +158,22 @@ window.addEventListener("mouseup", function () {
     insideNode = null;
 });
 
-function Graph(x, y, radius, node) {
+function Graph(x, y, radius, node, circleColor, textColor, textSize) {
     this.x = x;
     this.y = y;
     this.radius = radius;
     this.node = node;
     this.shapes = new DrawShapes(this.x, this.y);
+    this.circleColor = circleColor;
+    this.textColor = textColor;
+    this.textSize = textSize;
+    //this.edgeColor = edgeColor;
 
-    this.drawNode = function (circleColor, textColor) {
-        this.shapes.drawCircle(this.radius, "black", circleColor);
-        this.shapes.drawText(this.node, textColor, "center");
+    this.drawNode = function () {
+        //console.log(this.x, this.y);
+        this.shapes = new DrawShapes(this.x, this.y);
+        this.shapes.drawCircle(context, this.radius, "black", this.circleColor, this.node, this.textColor, textSize);
+        //this.shapes.drawText(context, this.node, this.textColor, "center", textSize);
     };
 
     this.drawEdge = function (edges) {
@@ -159,6 +183,7 @@ function Graph(x, y, radius, node) {
             let angle2 = Math.atan2(this.y - edges[i].y, this.x - edges[i].x);
 
             this.shapes.drawLine(
+                context,
                 this.x + Math.cos(angle1) * this.radius,
                 this.y + Math.sin(angle1) * this.radius,
                 edges[i].x +
@@ -167,21 +192,26 @@ function Graph(x, y, radius, node) {
                 edges[i].y +
                     Math.sin(angle2) * edges[i].radius -
                     Math.sin(angle2),
-                "black"
+                edgeColor[this.node][edges[i].node]
             );
         }
     };
 }
 
 function init() {
-    clearCanvas();
+    clearCanvas(context);
     nodes = [];
     edges = [];
+    edgeColor = new Array(nodeNumbers);
+    for (let i = 0; i < nodeNumbers; i++) {
+        edgeColor[i] = new Array(nodeNumbers);
+    }
 
     let R = Math.min(window.innerWidth / 2, window.innerHeight / 2) - (nodeRadius + 20);
-    let circumLen = R * 2 * Math.PI;
-    let avgDis = circumLen / nodeNumbers - 8;
-    // console.log("avgdis", avgDis);
+    R -= queueBoundary;
+    // let circumLen = R * 2 * Math.PI;
+    // let avgDis = circumLen / nodeNumbers - 8;
+    // console.log(circumLen, avgDis);
 
     for (let i = 0; i < nodeNumbers; i++) {
         let ran = randomNode(midX, midY, R);
@@ -193,16 +223,12 @@ function init() {
                 x = ran[0];
                 y = ran[1];
                 j = -1;
-                //console.log(x, y);
             }
         }
 
-        nodes[i] = new Graph(x, y, nodeRadius, i);
+        nodes[i] = new Graph(x, y, nodeRadius, i, "white", "black", "black");
     }
-    return true;
-}
 
-function draw() {
     for (let i = 0; i < edgeNumbers; i++) {
         let u = document.getElementById("u" + i).value;
         let v = document.getElementById("v" + i).value;
@@ -217,10 +243,28 @@ function draw() {
         } else {
             edges[v].push(nodes[u]);
         }
+
+        edgeColor[u][v] = "black";
+        edgeColor[v][u] = "black";
     }
 
+    return true;
+}
+
+function draw(reset) {
     for (let i = 0; i < nodeNumbers; i++) {
-        nodes[i].drawNode("white", "black");
+        if (reset) {
+            for (let i = 0; i < edgeNumbers; i++) {
+                let u = document.getElementById("u" + i).value;
+                let v = document.getElementById("v" + i).value;
+                edgeColor[u][v] = "black";
+                edgeColor[v][u] = "black";
+            }
+            nodes[i].circleColor = "white";
+            nodes[i].textColor = "black";
+            nodes[i].edgeColor = "black";
+        }
+        nodes[i].drawNode();
     }
 
     for (let i = 0; i < nodeNumbers; i++) {
@@ -232,6 +276,15 @@ function draw() {
 }
 
 
+context.beginPath();
+context.moveTo(10, canvas.height - 70);
+context.lineTo(10, canvas.height);
+context.lineTo(60, canvas.height);
+context.lineTo(60, canvas.height - 70);
+context.stroke();
+
+//genNode();
+//testQueue();
 
 // context.clearRect(0, 0, canvas.width, canvas.height);
 // arrow({ x: 10, y: 10 }, { x: 100, y: 170 }, 10);
