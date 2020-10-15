@@ -30,6 +30,9 @@ document.querySelector("#NE").addEventListener("click", function () {
         edgeInput.removeChild(edgeInput.firstChild);
     }
     let x, u, v;
+    let instruction = document.createElement("h3");
+    instruction.innerHTML = "Input Edges: "
+    edgeInput.appendChild(instruction);
     for (let i = 0; i < edgeNumbers; i++) {
         x = document.createElement("div");
         u = document.createElement("input");
@@ -77,17 +80,39 @@ function gen() {
     if (init()) {
         draw(true);
     }
+
+    let simulation = document.querySelector("#simulation");
+
+    while (simulation.firstChild) {
+        simulation.removeChild(simulation.firstChild);
+    }
+
+    let label = document.createElement("label");
+    let startNode = document.createElement("input");
+    let startButton = document.createElement("button");
+    
+    label.for = "startNode";
+    label.innerHTML = "Start Node"
+    startNode.id = "startNode";
+    startNode.type = "number";
+    startNode.setAttribute("style", "margin: 10px");
+    startButton.id = "startButton";
+    startButton.innerHTML = "Start Simulation";
+    startButton.addEventListener("click", startSimulation);
+
+    simulation.appendChild(label);
+    simulation.appendChild(startNode);
+    simulation.appendChild(startButton);
 }
 
-document.querySelector("#simulate").addEventListener("click", function () {
+function startSimulation() {
     if (nodes.length === 0 || edges.length === 0) {
         alert("input incomplete");
         return;
     }
     clearCanvas(context);
     draw(true);
-    let start = parseInt(document.getElementById("start").value);
-    // let goal = document.getElementById("goal").value;
+    let start = parseInt(document.getElementById("startNode").value);
     if (start >= nodeNumbers || start < 0) {
         alert("start node should be between 0 and Nodes-1");
         return;
@@ -103,11 +128,9 @@ document.querySelector("#simulate").addEventListener("click", function () {
                 }
             return 1;
         });
-        //console.log(edges[i])
     }
     bfs(nodes[start], null, nodeNumbers, edges);
-    //simulateBFS();
-});
+}
 
 let insideNode = null;
 let mouseMove = false;
